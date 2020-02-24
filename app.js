@@ -1,11 +1,61 @@
-var budgetController = (function() {})();
+var budgetController = (function() {
+  var Expense = function(id, description, value) {
+    this.id = id;
+    this.description = description;
+    this.value = value;
+  };
+
+  var Income = function(id, description, value) {
+    this.id = id;
+    this.description = description;
+    this.value = value;
+  };
+
+  var data = {
+    allItems: {
+      exp: [],
+      inc: []
+    },
+    totals: {
+      exp: 0,
+      inc: 0
+    }
+  };
+
+  return {
+    addItem: function(type, des, val) {
+      var newItem, ID;
+      //Create ID
+      if (data.allItems[type].length > 0) {
+        ID = data.allItems[type][data.allItems[type].length - 1].id + 1;
+      } else {
+        ID = 0;
+      }
+
+      //Create new item based on type
+      if (type === 'exp') {
+        newItem = new Expense(ID, des, val);
+      } else if (type === 'inc') {
+        newItem = new Income(ID, des, val);
+      }
+
+      //Push data into data structure
+      data.allItems[type].push(newItem);
+
+      //return the new element
+      return newItem;
+    }
+  };
+})();
 
 var UIController = (function() {
   var DOMStrings = {
     inputType: '.add__type',
     inputDescription: '.add__description',
     inputValue: '.add__value',
-    inputBtn: '.add__btn'
+    inputBtn: '.add__btn',
+    incomeContainer: '.income__list',
+    expensesContainer: '.expenses__list'
   };
 
   return {
@@ -16,6 +66,28 @@ var UIController = (function() {
         value: document.querySelector(DOMStrings.inputValue).value
       };
     },
+
+    addListItem: function(obj, type) {
+      var html, newHtml, element;
+      // Create HTML string with placeholder text
+      if (type === 'inc') {
+        element = DOMStrings.incomeContainer;
+        html =
+          '<div class="item clearfix" id="income-%id%"> <div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-closs-outline"></i></button></div></div></div>';
+      } else if (type === 'exp') {
+        element = DOMStrings.expensesContainer;
+        html =
+          '<div class="item clearfix" id="expense-%id%"> <div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-closs-outline"></i></button></div></div></div>';
+      }
+
+      // Replace the placeholder text with data
+      newHtml = html.replace('%id%', obj.id);
+      newHtml = newHtml.replace('%description%', obj.description);
+      newHtml = newHtml.replace('%value%', obj.value);
+      //Insert the HTML into string
+      document.querySelector(element).insertAdjacentHTML('beforeend', newHtml);
+    },
+
     getDOMStrings: function() {
       return DOMStrings;
     }
@@ -23,23 +95,36 @@ var UIController = (function() {
 })();
 
 var controller = (function(budgetCtrl, UICtrl) {
-  var DOM = UICtrl.getDOMStrings();
+  var setupEventListeners = function() {
+    var DOM = UICtrl.getDOMStrings();
+
+    document.querySelector(DOM.inputBtn).addEventListener('click', ctrlAddItem);
+
+    document.addEventListener('keypress', function(event) {
+      if (event.keyCode === 13 || event.which === 13) {
+        ctrlAddItem();
+      }
+    });
+  };
 
   var ctrlAddItem = function() {
+    var input, newItem;
     // Get input data
-    var input = UICtrl.getInput();
-    console.log(input);
+    input = UICtrl.getInput();
     // Add the item to the budget controller
+    newItem = budgetCtrl.addItem(input.type, input.description, input.value);
     // Add the new item to UI
+    UICtrl.addListItem(newItem, input.type);
     // Calculate the Budget
     // Display the budget on the UI
   };
 
-  document.querySelector(DOM.inputBtn).addEventListener('click', ctrlAddItem);
-
-  document.addEventListener('keypress', function(event) {
-    if (event.keyCode === 13 || event.which === 13) {
-      ctrlAddItem();
+  return {
+    init: function() {
+      console.log('Application has started.');
+      setupEventListeners();
     }
-  });
+  };
 })(budgetController, UIController);
+
+controller.init();
